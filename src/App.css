@@ -1,0 +1,105 @@
+/* RESET & BASE */
+#root {
+  max-width: 1280px;
+  margin: 0 auto;
+  text-align: center;
+}
+
+/* --- KUSTOMISASI SCANNER AREA (ANTI-GELAP) --- */
+
+/* 1. Paksa semua teks di dalam reader jadi putih & terang */
+#reader, 
+#reader *, 
+#reader span, 
+#reader b, 
+#reader a {
+  color: #ffffff !important;
+  text-decoration: none !important;
+  font-family: sans-serif !important;
+}
+
+/* 2. Tombol Utama (Request Permission / Start / Stop) */
+#reader button, 
+#html5-qrcode-button-camera-permission, 
+#html5-qrcode-button-camera-start, 
+#html5-qrcode-button-camera-stop {
+  background-color: #2563eb !important; /* Biru Terang */
+  color: #ffffff !important;
+  border: none !important;
+  padding: 14px 24px !important;
+  border-radius: 12px !important;
+  font-weight: 800 !important;
+  text-transform: uppercase !important;
+  letter-spacing: 1px !important;
+  cursor: pointer !important;
+  margin: 15px auto !important;
+  display: inline-block !important;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4) !important;
+  transition: all 0.2s active:scale-95 !important;
+}
+
+#reader button:hover {
+  background-color: #1d4ed8 !important;
+  transform: translateY(-2px);
+}
+
+/* 3. Menghilangkan elemen yang tidak penting & merapikan layout */
+#reader {
+  border: none !important;
+  background: #000000 !important;
+}
+
+#reader__dashboard_section_csr {
+  padding: 20px !important;
+  background: transparent !important;
+}
+
+/* Menghilangkan instruksi "Scan an image file" yang bikin bingung */
+#html5-qrcode-anchor-scan-type-change {
+  display: none !important;
+}
+
+/* 4. Video Kamera */
+#reader video {
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important;
+  border-radius: 1.5rem;
+}
+
+/* 5. Animasi Garis Scan (Futuristik) */
+.scanner-overlay {
+  position: absolute;
+  inset: 0;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: linear-gradient(to bottom, 
+    transparent 50%, 
+    rgba(59, 130, 246, 0.4) 50%, 
+    #3b82f6 52%, 
+    transparent 54%);
+  background-size: 100% 200%;
+  animation: scan-line 2.5s linear infinite;
+  z-index: 10;
+  pointer-events: none;
+}
+
+@keyframes scan-line {
+  0% { background-position: 0 100%; }
+  100% { background-position: 0 0%; }
+}
+
+/* 6. Pesan Error (Tetap Merah tapi Terang) */
+#reader__status_span, #reader__status_span * {
+  color: #ff4d4d !important;
+  font-weight: bold !important;
+  margin-top: 10px !important;
+  display: block !important;
+}
+
+/* Bingkai Sudut Scanner Area */
+.scanner-box {
+  position: relative;
+  width: 250px;
+  height: 250px;
+  border: 2px solid rgba(255,255,255,0.2);
+}
