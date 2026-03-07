@@ -7,7 +7,7 @@ const Dashboard = ({ user, onScanClick }) => {
   const [isLibur, setIsLibur] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const SCRIPT_URL = "hhttps://script.google.com/macros/s/AKfycbzqg0NUfUh-_TgTpG-ITdRQkmR8JcJa59OG2YV6ZhOIx0tH4MvudvFjUb6M5gYCmCVL/exec";
+  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzqg0NUfUh-_TgTpG-ITdRQkmR8JcJa59OG2YV6ZhOIx0tH4MvudvFjUb6M5gYCmCVL/exec";
 
   // Fungsi menghitung hari kerja (Senin-Jumat) yang sudah lewat di bulan ini
   const hitungHariKerjaLewat = () => {
@@ -26,7 +26,7 @@ const Dashboard = ({ user, onScanClick }) => {
     return jumlahHariKerja;
   };
 
-  useEffect(() => {
+useEffect(() => {
     const fetchDashboardData = async () => {
       if (!user?.id) return;
       
@@ -36,40 +36,50 @@ const Dashboard = ({ user, onScanClick }) => {
         const checkLibur = hariKe === 0 || hariKe === 6;
         setIsLibur(checkLibur);
 
-        const response = await fetch(`${SCRIPT_URL}?id=${user.id}`);
+        // 1. Ambil data dengan cache breaker
+        const response = await fetch(`${SCRIPT_URL}?id=${user.id}&_t=${Date.now()}`);
         const data = await response.json();
 
         if (Array.isArray(data)) {
-          const tglHariIni = new Date().toLocaleDateString('id-ID', { day: '2-digit', month: 'short', year: 'numeric' });
+          // 2. Buat format tanggal hari ini: "08 Mar 2026"
+          const d = new Date();
+          const bulanIndo = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+          const tglHariIni = ("0" + d.getDate()).slice(-2) + " " + bulanIndo[d.getMonth()] + " " + d.getFullYear();
           
           let countHadir = 0;
           let countTerlambat = 0;
           let countIzin = 0;
           let sudahAbsen = false;
-
-          // Ambil daftar tanggal unik saat user hadir/izin untuk menghindari double count
-          const tanggalUnikHadir = new Set();
+          const tanggalUnikAktif = new Set();
 
           data.forEach(item => {
-            if (item.tipe === "MASUK") {
+            // Pastikan data string aman
+            const itemTanggal = String(item.tanggal || "").trim();
+            const itemStatus = String(item.status || "").toLowerCase();
+            const itemTipe = String(item.tipe || "").toUpperCase();
+
+            // Cek apakah sudah absen hari ini
+            if (itemTanggal === tglHariIni) sudahAbsen = true;
+
+            // Hitung Hadir (Tipe MASUK)
+            if (itemTipe === "MASUK") {
               countHadir++;
-              tanggalUnikHadir.add(item.tanggal);
-              if (item.status.toLowerCase().includes("terlambat")) {
+              tanggalUnikAktif.add(itemTanggal);
+              if (itemStatus.includes("terlambat") || itemStatus.includes("telat")) {
                 countTerlambat++;
               }
             }
             
-            if (item.status.toLowerCase().includes("izin") || item.status.toLowerCase().includes("sakit")) {
+            // Hitung Izin/Sakit
+            if (itemStatus.includes("izin") || itemStatus.includes("sakit")) {
               countIzin++;
-              tanggalUnikHadir.add(item.tanggal);
+              tanggalUnikAktif.add(itemTanggal);
             }
-
-            if (item.tanggal === tglHariIni) sudahAbsen = true;
           });
 
-          // HITUNG ALPA: Hari Kerja Lewat - (Hadir + Izin)
+          // 3. HITUNG ALPA
           const hariKerjaHarusnya = hitungHariKerjaLewat();
-          const totalMasukDanIzin = tanggalUnikHadir.size;
+          const totalMasukDanIzin = tanggalUnikAktif.size;
           const hitungAlpa = Math.max(0, hariKerjaHarusnya - totalMasukDanIzin);
 
           setRekap({ 
