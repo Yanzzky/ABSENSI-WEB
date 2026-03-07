@@ -18,8 +18,13 @@ const App = () => {
   };
 
   if (halaman === "ADMIN") {
-    return <AdminPage onLogout={handleLogout} />;
-  }
+  return (
+    <AdminPage 
+      user={userAktif}
+      onLogout={handleLogout}
+    />
+  );
+}
 
   // Jika rolenya PEGAWAI atau USER
   if (halaman === "PEGAWAI" || halaman === "USER") {

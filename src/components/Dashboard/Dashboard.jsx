@@ -7,7 +7,7 @@ const Dashboard = ({ user, onScanClick }) => {
   const [isLibur, setIsLibur] = useState(false);
   const [loading, setLoading] = useState(true);
 
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzdwXS_5t39g_4tAbv5_fTW_Xff0IoAKGdpkq3PlyhXYSDLWEfx2CvE13cricWY7Mo/exec";
+  const SCRIPT_URL = "hhttps://script.google.com/macros/s/AKfycbzqg0NUfUh-_TgTpG-ITdRQkmR8JcJa59OG2YV6ZhOIx0tH4MvudvFjUb6M5gYCmCVL/exec";
 
   // Fungsi menghitung hari kerja (Senin-Jumat) yang sudah lewat di bulan ini
   const hitungHariKerjaLewat = () => {
