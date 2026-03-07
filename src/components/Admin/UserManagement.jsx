@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { 
   Search, UserPlus, MoreVertical, CheckCircle2, 
-  Clock, Smartphone, Download, Loader2, RefreshCw,
-  SortAsc, SortDesc, ChevronDown
+  RefreshCw, SortAsc, SortDesc, ChevronDown, Loader2
 } from 'lucide-react';
 
 const UserManagement = ({ SCRIPT_URL }) => {
@@ -12,7 +11,6 @@ const UserManagement = ({ SCRIPT_URL }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [sortConfig, setSortConfig] = useState({ key: 'nama', direction: 'asc' });
 
-  // 1. Fetch Data dengan cache-buster
   const fetchUsers = useCallback(async (isAuto = false) => {
     try {
       if (!isAuto) setLoading(true);
@@ -21,13 +19,8 @@ const UserManagement = ({ SCRIPT_URL }) => {
       const response = await fetch(`${SCRIPT_URL}?action=getUsers&_t=${new Date().getTime()}`);
       const data = await response.json();
       
-      // Jika error "ID User Kosong" muncul lagi, berarti Apps Script belum diupdate
-      if (data.error) {
-        console.error("Error dari Server:", data.error);
-        setUsers([]);
-      } else {
-        setUsers(Array.isArray(data) ? data : []);
-      }
+      setUsers(Array.isArray(data) ? data : []);
+      console.log("Data mentah dari Sheet:", data);
     } catch (error) {
       console.error("Gagal load user:", error);
     } finally {
@@ -42,32 +35,31 @@ const UserManagement = ({ SCRIPT_URL }) => {
     return () => clearInterval(interval);
   }, [fetchUsers]);
 
-  // 2. Logika Sorting (Ascending / Descending)
   const requestSort = (key) => {
     let direction = 'asc';
-    if (sortConfig.key === key && sortConfig.direction === 'asc') {
-      direction = 'desc';
-    }
+    if (sortConfig.key === key && sortConfig.direction === 'asc') direction = 'desc';
     setSortConfig({ key, direction });
   };
 
-  const sortedUsers = React.useMemo(() => {
-    let sortableUsers = [...users];
-    if (sortConfig.key !== null) {
-      sortableUsers.sort((a, b) => {
-        if (a[sortConfig.key] < b[sortConfig.key]) {
-          return sortConfig.direction === 'asc' ? -1 : 1;
-        }
-        if (a[sortConfig.key] > b[sortConfig.key]) {
-          return sortConfig.direction === 'asc' ? 1 : -1;
-        }
-        return 0;
-      });
+  const filteredAndSortedUsers = useMemo(() => {
+    let result = [...users];
+
+    if (searchTerm) {
+      const s = searchTerm.toLowerCase();
+      result = result.filter(u => 
+        Object.values(u).some(val => String(val).toLowerCase().includes(s))
+      );
     }
-    return sortableUsers.filter(user => 
-      user.nama?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.identitas?.toString().includes(searchTerm)
-    );
+
+    result.sort((a, b) => {
+      const aVal = String(a[sortConfig.key] || "").toLowerCase();
+      const bVal = String(b[sortConfig.key] || "").toLowerCase();
+      if (aVal < bVal) return sortConfig.direction === 'asc' ? -1 : 1;
+      if (aVal > bVal) return sortConfig.direction === 'asc' ? 1 : -1;
+      return 0;
+    });
+
+    return result;
   }, [users, sortConfig, searchTerm]);
 
   return (
@@ -78,25 +70,17 @@ const UserManagement = ({ SCRIPT_URL }) => {
           <Search className="absolute left-4 top-3.5 text-gray-400" size={18} />
           <input 
             type="text" 
-            placeholder="Cari nama atau ID..." 
-            className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 text-sm outline-none"
+            placeholder="Cari user..." 
+            className="w-full pl-12 pr-4 py-3 bg-gray-50 rounded-2xl border-none focus:ring-2 focus:ring-blue-500 text-sm outline-none font-bold"
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
 
         <div className="flex items-center gap-2 w-full md:w-auto">
-          {/* Menu Dropdown Sorting */}
-          <div className="relative group">
-            <button className="flex items-center gap-2 bg-gray-50 text-gray-600 px-4 py-3 rounded-2xl font-bold text-sm hover:bg-gray-100">
-              {sortConfig.direction === 'asc' ? <SortAsc size={18} /> : <SortDesc size={18} />}
-              Sort: {sortConfig.key === 'nama' ? 'Nama' : 'ID'}
-              <ChevronDown size={14} />
-            </button>
-            <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-100 p-2 opacity-0 invisible group-hover:opacity-100 group-hover:visible z-50 transition-all">
-              <button onClick={() => requestSort('nama')} className="w-full text-left p-2 hover:bg-blue-50 rounded-lg text-xs font-bold">Urut Nama</button>
-              <button onClick={() => requestSort('id')} className="w-full text-left p-2 hover:bg-blue-50 rounded-lg text-xs font-bold">Urut ID</button>
-            </div>
-          </div>
+          <button onClick={() => requestSort('nama')} className="flex items-center gap-2 bg-gray-50 text-gray-600 px-4 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest hover:bg-gray-100 transition-all">
+            {sortConfig.direction === 'asc' ? <SortAsc size={16} /> : <SortDesc size={16} />}
+            Urut: Nama
+          </button>
 
           <button onClick={() => fetchUsers()} className="p-3 bg-gray-50 text-gray-500 rounded-2xl hover:bg-gray-100 transition-colors">
             <RefreshCw size={18} className={isRefreshing ? "animate-spin" : ""} />
@@ -110,33 +94,57 @@ const UserManagement = ({ SCRIPT_URL }) => {
           <table className="w-full text-left border-collapse">
             <thead>
               <tr className="bg-gray-50/50 border-b border-gray-100">
-                <th className="p-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest cursor-pointer hover:text-blue-600" onClick={() => requestSort('nama')}>
-                  User & Info {sortConfig.key === 'nama' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
+                <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest cursor-pointer hover:text-blue-600 transition-colors" onClick={() => requestSort('nama')}>
+                  Karyawan {sortConfig.key === 'nama' && (sortConfig.direction === 'asc' ? '↑' : '↓')}
                 </th>
-                <th className="p-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Role</th>
-                <th className="p-6 text-[10px] font-bold text-gray-400 uppercase tracking-widest">Status</th>
-                <th className="p-6 text-center">Aksi</th>
+                <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest">Identitas</th>
+                <th className="p-6 text-[10px] font-black text-gray-400 uppercase tracking-widest text-center">Aksi</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-gray-50">
               {loading ? (
-                <tr><td colSpan="4" className="p-20 text-center"><Loader2 className="animate-spin mx-auto text-blue-500" /></td></tr>
-              ) : sortedUsers.map((item) => (
-                <tr key={item.id} className="hover:bg-gray-50/50 transition-colors">
-                  <td className="p-6 flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center text-blue-600 font-black">
-                      {item.nama?.substring(0, 2).toUpperCase()}
-                    </div>
-                    <div>
-                      <p className="font-bold text-gray-800 leading-none mb-1">{item.nama}</p>
-                      <p className="text-[11px] text-gray-400 italic">ID: {item.id} • {item.email}</p>
-                    </div>
+                <tr>
+                  <td colSpan="3" className="p-20 text-center">
+                    <Loader2 className="animate-spin mx-auto text-blue-500" size={32} />
+                    <p className="mt-4 text-xs font-bold text-gray-400 uppercase tracking-widest">Memuat Data...</p>
                   </td>
-                  <td className="p-6 text-xs font-bold text-gray-600">{item.role || 'Pegawai'}</td>
-                  <td className="p-6"><div className="flex items-center gap-2 text-emerald-600 font-bold text-xs"><CheckCircle2 size={14} /> Active</div></td>
-                  <td className="p-6 text-center"><button className="p-2 text-gray-300 hover:text-blue-600"><MoreVertical size={20}/></button></td>
                 </tr>
-              ))}
+              ) : filteredAndSortedUsers.length === 0 ? (
+                <tr>
+                  <td colSpan="3" className="p-20 text-center text-gray-400 font-bold italic">
+                    Data tidak ditemukan
+                  </td>
+                </tr>
+              ) : (
+                filteredAndSortedUsers.map((item, index) => (
+                  <tr key={index} className="hover:bg-gray-50/50 transition-colors group">
+                    <td className="p-6">
+                      <div className="flex items-center gap-4">
+                        <div className="w-12 h-12 rounded-2xl bg-blue-600 text-white flex items-center justify-center font-black shadow-lg shadow-blue-100 group-hover:scale-110 transition-transform">
+                          {(item.nama || "U").substring(0, 1).toUpperCase()}
+                        </div>
+                        <div>
+                          <p className="font-black text-gray-800 leading-none mb-1 uppercase tracking-tighter italic italic">
+                            {item.nama || "No Name"}
+                          </p>
+                          <p className="text-[10px] text-gray-400 font-mono">ID: {item.id || "-"}</p>
+                        </div>
+                      </div>
+                    </td>
+                    <td className="p-6">
+                      <p className="text-sm font-bold text-gray-600">{item.identitas || "-"}</p>
+                      <span className="inline-block px-2 py-0.5 bg-gray-100 text-gray-400 rounded text-[9px] font-black uppercase mt-1">
+                        {item.role || "PEGAWAI"}
+                      </span>
+                    </td>
+                    <td className="p-6 text-center">
+                      <button className="p-2 text-gray-300 hover:text-blue-600 transition-colors">
+                        <MoreVertical size={20} />
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
             </tbody>
           </table>
         </div>
