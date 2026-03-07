@@ -228,7 +228,7 @@ const AdminPage = ({ user, onLogout }) => {
             <UserManagement SCRIPT_URL={SCRIPT_URL} />
           )}
           {activeMenu === "Rekap Absensi" && (
-            <AttendanceRecord rawData={rawData} loading={loading} SCRIPT_URL={SCRIPT_URL}/>
+            <AttendanceRecord SCRIPT_URL={SCRIPT_URL}/>
           )}
           {activeMenu === "Profil Admin" && (
             <AdminProfile user={user} SCRIPT_URL={SCRIPT_URL} />
@@ -236,7 +236,7 @@ const AdminPage = ({ user, onLogout }) => {
           {activeMenu === "UserManajemen" && <UserManagement/>}
           {activeMenu === "Data Karyawan" && <EmployeeData SCRIPT_URL={SCRIPT_URL} />}
           {activeMenu === "Pengaturan" && <SystemSettings />}
-          {activeMenu === "Log Aktivitas" && <ActivityLog />}
+          {activeMenu === "Log Aktivitas" && <ActivityLog SCRIPT_URL={SCRIPT_URL}/>}
         </main>
       </div>
     </div>
