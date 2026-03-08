@@ -8,29 +8,35 @@ const Riwayat = ({ userId }) => { // Ambil userId dari props (Data login)
   // URL Web App yang Anda dapatkan setelah Deploy
   const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzdwXS_5t39g_4tAbv5_fTW_Xff0IoAKGdpkq3PlyhXYSDLWEfx2CvE13cricWY7Mo/exec";
 
-  const fetchHistory = async () => {
-    if (!userId) {
-      console.error("userId tidak ditemukan!");
-      setLoading(false);
-      return;
-    }
-    try {
-      setLoading(true);
-      const response = await fetch(`${SCRIPT_URL}?id=${userId}`);
-      
-      // Cek apakah response oke (status 200)
-      if (!response.ok) throw new Error("Gagal menyambung ke server");
+const fetchHistory = async () => {
+  if (!userId) {
+    console.error("userId tidak ditemukan!");
+    setLoading(false);
+    return;
+  }
+  try {
+    setLoading(true);
+    
+    // TAMBAHKAN objek konfigurasi di bawah ini
+    const response = await fetch(`${SCRIPT_URL}?id=${userId}`, {
+      method: "GET",
+      redirect: "follow", // WAJIB: Agar mengikuti pengalihan Google
+      mode: "cors",       // Memastikan mode CORS aktif
+    });
 
-      const data = await response.json();
-      console.log("Data diterima:", data); // Cek apakah datanya sampai
-      setHistoryData(data);
-    } catch (error) {
-      console.error("Error Detail:", error.message);
-      alert("Gagal mengambil data: " + error.message);
-    } finally {
-      setLoading(false);
-    }
-  };
+    if (!response.ok) throw new Error("Gagal menyambung ke server");
+
+    const data = await response.json();
+    console.log("Data diterima:", data); 
+    setHistoryData(data);
+  } catch (error) {
+    // Log error ke console agar lebih detail dibanding alert
+    console.error("Detail Error:", error);
+    alert("Gagal mengambil data: " + error.message);
+  } finally {
+    setLoading(false);
+  }
+};
 
   useEffect(() => {
     fetchHistory();

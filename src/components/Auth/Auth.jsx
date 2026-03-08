@@ -18,6 +18,8 @@ const Auth = ({ onLogin }) => {
     setPesan("");
     setLoading(true);
 
+// ... kode lainnya tetap ...
+
     try {
       const response = await fetch(SCRIPT_URL, {
         method: "POST",
@@ -26,15 +28,29 @@ const Auth = ({ onLogin }) => {
       const result = await response.json();
 
       if (result.status === "success") {
+        // --- MASUKKAN KODE INI DI SINI ---
+        const sessionData = {
+          role: result.role,
+          id: result.id,
+          nama: result.nama,
+          identitas: result.identitas
+        };
+        // Simpan ke memori browser agar saat refresh tidak hilang
+// Di Auth.jsx (WAJIB SAMA dengan App.jsx)
+localStorage.setItem("app_user", JSON.stringify(sessionData));
+        
+        // Panggil fungsi onLogin bawaanmu
         onLogin(result.role, result);
+        // ---------------------------------
       } else {
         setPesan("❌ " + result.message);
       }
     } catch (error) {
       setPesan("❌ Gagal terhubung ke server.");
     }
-    setLoading(false);
-  };
+  }
+
+// ... kode lainnya tetap ...
 
   return (
     <div className="w-screen h-screen bg-[#e8f0fe] flex items-center justify-center font-sans relative overflow-hidden">

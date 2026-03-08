@@ -4,61 +4,63 @@ import AdminPage from './components/Admin/AdminPage';
 import UserLayout from './components/Layout/UserLayout';
 
 const App = () => {
-  // 1. Ambil data user duluan dari memori
+  // 1. Inisialisasi User secara instan dari sessionStorage (PER TAB)
   const [userAktif, setUserAktif] = useState(() => {
-    const savedUser = localStorage.getItem("app_user");
-    return savedUser ? JSON.parse(savedUser) : null;
-  });
-
-  // 2. Tentukan halaman berdasarkan ROLE user yang ada di memori
-  const [halaman, setHalaman] = useState(() => {
-    const savedUser = localStorage.getItem("app_user");
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      // Kalau rolenya ADMIN, paksa ke halaman ADMIN
-      return parsed.role === "ADMIN" ? "ADMIN" : "USER";
+    const savedUser = sessionStorage.getItem("app_user");
+    if (!savedUser) return null;
+    try {
+      return JSON.parse(savedUser);
+    } catch (e) {
+      return null;
     }
-    return "AUTH";
   });
 
-  // 3. Sinkronisasi memori setiap kali ada perubahan
+  // 2. State halaman (Navigasi internal)
+  const [halaman, setHalaman] = useState(() => {
+    if (!userAktif) return "AUTH";
+    return String(userAktif.role).toUpperCase() === "ADMIN" ? "ADMIN" : "USER";
+  });
+
+  // 3. Sinkronisasi Memori ke sessionStorage
   useEffect(() => {
     if (userAktif) {
-      localStorage.setItem("app_user", JSON.stringify(userAktif));
-      localStorage.setItem("app_halaman", halaman);
-    } else {
-      localStorage.removeItem("app_user");
-      localStorage.removeItem("app_halaman");
-      localStorage.removeItem("activeAdminMenu");
+      sessionStorage.setItem("app_user", JSON.stringify(userAktif));
     }
-  }, [userAktif, halaman]);
+  }, [userAktif]);
 
+  // 4. Fungsi Login
   const handleLogin = (role, dataUser) => {
-    setUserAktif(dataUser);
-    // Pastikan role yang dikirim dari Google Apps Script adalah "ADMIN" (huruf besar)
-    const targetHalaman = String(dataUser.role).toUpperCase() === "ADMIN" ? "ADMIN" : "USER";
-    setHalaman(targetHalaman);
+    const roleFix = String(role).toUpperCase();
+    const fullData = { ...dataUser, role: roleFix };
+    
+    // Simpan ke sessionStorage agar terisolasi di tab ini saja
+    sessionStorage.setItem("app_user", JSON.stringify(fullData));
+    setUserAktif(fullData);
+    setHalaman(roleFix === "ADMIN" ? "ADMIN" : "USER");
   };
 
+  // 5. Fungsi Logout
   const handleLogout = () => {
+    sessionStorage.removeItem("app_user");
+    sessionStorage.removeItem("activeAdminMenu");
     setUserAktif(null);
     setHalaman("AUTH");
   };
 
   // --- LOGIKA RENDER (PENJAGA PINTU) ---
-  
-  // Jika belum login, tampilkan halaman Auth
-  if (halaman === "AUTH" || !userAktif) {
+
+  // Jika tidak ada data user, tampilkan halaman Login
+  if (!userAktif || halaman === "AUTH") {
     return <Auth onLogin={handleLogin} />;
   }
 
-  // Jika Login sebagai ADMIN
-  if (halaman === "ADMIN" && userAktif.role === "ADMIN") {
+  // Cek Role ADMIN
+  if (String(userAktif.role).toUpperCase() === "ADMIN") {
     return <AdminPage user={userAktif} onLogout={handleLogout} />;
   }
 
-  // Jika selain itu, tampilkan halaman USER/PEGAWAI
-  return <UserLayout onLogout={handleLogout} user={userAktif} />;
+  // Cek Role USER/PEGAWAI
+  return <UserLayout user={userAktif} onLogout={handleLogout} />;
 };
 
 export default App;

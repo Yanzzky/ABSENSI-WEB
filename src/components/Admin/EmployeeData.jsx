@@ -14,16 +14,15 @@ const EmployeeData = ({ SCRIPT_URL }) => {
     if (!SCRIPT_URL) return;
     try {
       setLoading(true);
+      // Tambahkan timestamp agar data selalu fresh (anti-cache)
       const response = await fetch(`${SCRIPT_URL}?action=getUsers&_t=${new Date().getTime()}`);
       const data = await response.json();
       
-      if (Array.isArray(data)) {
-        // Filter: Hanya ambil yang bukan Admin
-        const filtered = data.filter(u => String(u.role).toUpperCase() !== "ADMIN");
-        setEmployees(filtered);
-      }
+      // Pastikan data yang masuk adalah array
+      setEmployees(Array.isArray(data) ? data : []);
     } catch (error) {
       console.error("Gagal load data induk:", error);
+      setEmployees([]);
     } finally {
       setLoading(false);
     }
@@ -39,7 +38,6 @@ const EmployeeData = ({ SCRIPT_URL }) => {
       return;
     }
     
-    // Siapkan data: Hapus kolom password & rapikan nama kolom untuk Excel
     const dataForExcel = employees.map((emp, index) => ({
       "No": index + 1,
       "ID Karyawan": emp.id,
@@ -51,21 +49,23 @@ const EmployeeData = ({ SCRIPT_URL }) => {
     const ws = XLSX.utils.json_to_sheet(dataForExcel);
     const wb = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(wb, ws, "Database_Karyawan");
-    
-    // Download file
     XLSX.writeFile(wb, `Data_Induk_Karyawan_${new Date().toLocaleDateString('id-ID')}.xlsx`);
-    alert("✅ Berhasil! Cek folder download abang.");
   };
 
-  const displayData = employees.filter(emp => 
-    (emp.nama?.toLowerCase().includes(searchTerm.toLowerCase())) ||
-    (emp.id?.toLowerCase().includes(searchTerm.toLowerCase()))
-  );
+  // --- SOLUSI AMAN UNTUK FILTERING ---
+  const displayData = employees.filter(emp => {
+    // Paksa semua data jadi string dan lowercase agar tidak error jika ada angka/null
+    const sTerm = searchTerm.toLowerCase();
+    const nama = emp.nama ? String(emp.nama).toLowerCase() : "";
+    const id = emp.id ? String(emp.id).toLowerCase() : "";
+
+    return nama.includes(sTerm) || id.includes(sTerm);
+  });
 
   return (
     <div className="space-y-6 text-left animate-in fade-in duration-500">
       
-      {/* HEADER */}
+      {/* HEADER & SEARCH AREA */}
       <div className="flex flex-col md:flex-row justify-between items-center gap-4 bg-white p-6 rounded-[2rem] border border-gray-100 shadow-sm">
         <div className="flex items-center gap-4">
           <div className="bg-emerald-600 p-3 rounded-2xl text-white shadow-lg shadow-emerald-100">
@@ -81,15 +81,15 @@ const EmployeeData = ({ SCRIPT_URL }) => {
           <button 
             onClick={fetchEmployees}
             className="p-2.5 bg-gray-50 text-gray-400 hover:text-emerald-600 rounded-xl transition-colors"
-            title="Refresh Data"
           >
             <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
           </button>
           <div className="relative flex-1">
             <Search className="absolute left-3 top-2.5 text-gray-400" size={16} />
             <input 
-              type="text" placeholder="Cari..." 
+              type="text" placeholder="Cari nama atau ID..." 
               className="pl-10 pr-4 py-2 bg-gray-50 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-emerald-500 w-full"
+              value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
           </div>
@@ -97,12 +97,12 @@ const EmployeeData = ({ SCRIPT_URL }) => {
             onClick={exportToExcel}
             className="bg-emerald-600 hover:bg-emerald-700 text-white px-5 py-2.5 rounded-xl text-xs font-black uppercase tracking-widest flex items-center gap-2 shadow-lg shadow-emerald-100 active:scale-95 transition-all"
           >
-            <Download size={16}/> Export Excel
+            <Download size={16}/> Export
           </button>
         </div>
       </div>
 
-      {/* STATS */}
+      {/* STATS AREA */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div className="bg-white p-6 rounded-[2.5rem] border border-gray-100 shadow-sm flex items-center gap-5">
           <div className="w-12 h-12 bg-emerald-50 text-emerald-600 rounded-2xl flex items-center justify-center"><Users size={24}/></div>
@@ -122,7 +122,7 @@ const EmployeeData = ({ SCRIPT_URL }) => {
         </div>
       </div>
 
-      {/* TABLE */}
+      {/* TABLE AREA */}
       <div className="bg-white rounded-[2.5rem] border border-gray-100 shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full text-left">
@@ -141,7 +141,7 @@ const EmployeeData = ({ SCRIPT_URL }) => {
                 </tr>
               ) : displayData.length === 0 ? (
                 <tr>
-                  <td colSpan="4" className="py-20 text-center text-gray-400 font-bold italic">Belum ada data pegawai...</td>
+                  <td colSpan="4" className="py-20 text-center text-gray-400 font-bold italic">Data tidak ditemukan...</td>
                 </tr>
               ) : (
                 displayData.map((emp, idx) => (
