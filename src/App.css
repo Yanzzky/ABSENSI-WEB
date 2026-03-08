@@ -55,8 +55,25 @@
 }
 
 /* Menghilangkan instruksi "Scan an image file" yang bikin bingung */
+/* Cari bagian ini di CSS abang dan HAPUS atau UBAH jadi block */
+/* PAKSA TOMBOL UPLOAD MUNCUL */
 #html5-qrcode-anchor-scan-type-change {
-  display: none !important;
+  display: block !important; /* Munculkan kembali */
+  visibility: visible !important;
+  color: #2563eb !important; /* Warna Biru */
+  font-size: 14px !important;
+  font-weight: 800 !important;
+  text-decoration: underline !important;
+  margin-top: 20px !important;
+  margin-bottom: 10px !important;
+  cursor: pointer !important;
+  opacity: 1 !important;
+}
+
+/* Pastikan wadah tombolnya tidak tersembunyi */
+#reader__dashboard_section_csr {
+  display: block !important;
+  opacity: 1 !important;
 }
 
 /* 4. Video Kamera */
@@ -102,4 +119,34 @@
   width: 250px;
   height: 250px;
   border: 2px solid rgba(255,255,255,0.2);
+}
+
+/* Menghilangkan icon gambar sampah di tengah reader sebelum start */
+#reader img[alt="Info icon"], 
+#reader img[alt="Camera icon"] {
+  display: none !important;
+}
+
+/* Memastikan wadah scanner tetap melengkung walau kameranya belum muncul */
+#reader__scan_region {
+  background: #000 !important;
+  border-radius: 1.5rem !important;
+}
+
+/* Sembunyikan tombol stop bawaan kalau abang sudah buat tombol Batal sendiri */
+#html5-qrcode-button-camera-stop {
+  display: none !important;
+}
+
+/* Memperbaiki posisi tombol permission agar di tengah */
+#reader__dashboard_section_csr {
+  text-align: center !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+}
+
+.scanner-overlay {
+  will-change: background-position;
+  /* ... sisa kode abang ... */
 }
